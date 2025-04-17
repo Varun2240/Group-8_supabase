@@ -1,0 +1,231 @@
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: supabase
+---
+# PostgreSQL
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: supabase
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:13
+          env:
+            - name: POSTGRES_PASSWORD
+              value: examplepass
+            - name: POSTGRES_DB
+              value: postgres
+            - name: POSTGRES_USER
+              value: postgres
+          ports:
+            - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: supabase
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+---
+# Supabase API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supabase-api
+  namespace: supabase
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: supabase-api
+  template:
+    metadata:
+      labels:
+        app: supabase-api
+    spec:
+      containers:
+        - name: supabase-api
+          image: supabase/postgrest:latest
+          env:
+            - name: PGRST_DB_URI
+              value: postgres://postgres:examplepass@postgres:5432/postgres
+            - name: PGRST_DB_ANON_ROLE
+              value: anon
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: supabase-api
+  namespace: supabase
+spec:
+  selector:
+    app: supabase-api
+  ports:
+    - port: 3000
+---
+# Auth
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  namespace: supabase
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+        - name: auth
+          image: supabase/gotrue:latest
+          env:
+            - name: GOTRUE_DB_DRIVER
+              value: postgres
+            - name: GOTRUE_DB_DATABASE_URL
+              value: postgres://postgres:examplepass@postgres:5432/postgres
+          ports:
+            - containerPort: 9999
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+  namespace: supabase
+spec:
+  selector:
+    app: auth
+  ports:
+    - port: 9999
+---
+# Storage
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage
+  namespace: supabase
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storage
+  template:
+    metadata:
+      labels:
+        app: storage
+    spec:
+      containers:
+        - name: storage
+          image: supabase/storage-api:latest
+          env:
+            - name: POSTGRES_URL
+              value: postgres://postgres:examplepass@postgres:5432/postgres
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage
+  namespace: supabase
+spec:
+  selector:
+    app: storage
+  ports:
+    - port: 5000
+---
+# Realtime
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realtime
+  namespace: supabase
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: realtime
+  template:
+    metadata:
+      labels:
+        app: realtime
+    spec:
+      containers:
+        - name: realtime
+          image: supabase/realtime:latest
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_USER
+              value: postgres
+            - name: DB_PASSWORD
+              value: examplepass
+          ports:
+            - containerPort: 4000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: realtime
+  namespace: supabase
+spec:
+  selector:
+    app: realtime
+  ports:
+    - port: 4000
+---
+# Supabase Studio
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: studio
+  namespace: supabase
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: studio
+  template:
+    metadata:
+      labels:
+        app: studio
+    spec:
+      containers:
+        - name: studio
+          image: supabase/studio:latest
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: studio
+  namespace: supabase
+spec:
+  selector:
+    app: studio
+  ports:
+    - port: 3000
+---
